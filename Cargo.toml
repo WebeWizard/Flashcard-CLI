@@ -5,3 +5,4 @@ authors = ["webe"]
 edition = "2018"
 
 [dependencies]
+lib-flashcard = { path = "../lib-flashcard" }
