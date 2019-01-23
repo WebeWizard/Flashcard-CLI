@@ -12,25 +12,17 @@ enum AppState {
 
 fn main() {
     let mut state = AppState::MainMenu;
-
+    // note dbg!() is a thing now that i can use
     println!("Welcome to WebeWizard's Flashcard game!");
     println!("Use 'help' to show available commands.");
-    let stdin = io::stdin();
-    let mut input = String::new();
     loop {
         match state {
             AppState::MainMenu => {
-                print!("> ");
-                io::stdout().flush().unwrap();
-                stdin.read_line(&mut input).expect("Failed to read user input");
-                let command = input.trim_end().to_lowercase();
+                let command = prompt_for_command("> ");
                 state = main_menu(command);
             }
             AppState::DeckSelector => {
-                print!("> ");
-                io::stdout().flush().unwrap();
-                stdin.read_line(&mut input).expect("Failed to read user input");
-                let command = input.trim_end().to_lowercase(); // assuming no question/answer ends in whitespace
+                let command = prompt_for_command("> ");
                 state = deck_selector(command);
             }
             AppState::Game(deck, card_index) => {
@@ -38,32 +30,18 @@ fn main() {
             }
         }
         
-        // prompt for next input
-        input.clear();
+        // prepare for next input
         io::stdout().flush().unwrap();
     }
+}
 
-    // top level commands:
-    // help , lists available commands
-    // decks
-    // start <deck>
-    // quit
-    // reset , prompt the user if they are sure (y/n) , if 'y', then reset score for all decks
-
-    // how the game works...
-    // display question to user
-    // wait for command or answer
-    // if answer correct, update/save score and move to next card
-    // if all cards have been answered, tell the user great job and ask if they want to reset
-    // if answer incorrect, let the user know, wait for another answer
-    // if 'help' , then show available commands
-    // if 'show' , then display the answer
-    // if 'hide' , then show the question
-    // if 'next' , then show the next card
-    // if 'prev' , then show the previous card
-    // if 'exit' , then exit deck and return to main loop
-    // if 'reset' , prompt the user if they are sure (y/n) , if 'y', then reset score for this deck
-
+fn prompt_for_command(msg: &'static str) -> String {
+    let stdin = io::stdin();
+    let mut input = String::new();
+    print!("{}",msg);
+    io::stdout().flush().unwrap();
+    stdin.read_line(&mut input).expect("Failed to read user input");
+    return input.trim_end().to_lowercase();
 }
 
 fn main_menu(command: String) -> AppState {
@@ -119,12 +97,7 @@ fn card_game(deck: deck::Deck, index: usize) -> AppState {
     // make it part of the main state
     let card: &card::Card = &deck.cards[index];
     println!("Question: {}", deck.cards[index].question);
-    print!("Answer: ");
-    io::stdout().flush().unwrap();
-    let stdin = io::stdin();
-    let mut input = String::new();
-    stdin.read_line(&mut input).expect("Failed to read user input");
-    let command = input.trim_end().to_lowercase();
+    let command = prompt_for_command("Answer: ");
     let mut next_index = index;
     match command.as_str() {
         "x" => {
@@ -139,6 +112,12 @@ fn card_game(deck: deck::Deck, index: usize) -> AppState {
         }
         _ if command == card.answer => {
             println!("Correct! The answer is:  {}", card.answer);
+            if index == deck.cards.len()-1 {
+                println!("Reached the end of the deck. Returning to main menu.");
+                return AppState::MainMenu;
+            } else {
+                next_index = index+1;
+            }
         }
         _ => println!("Incorrect")
     }
